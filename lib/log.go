@@ -576,7 +576,7 @@ func Sync(master, slave *net.UDPConn) {
 					logger.Warn("==================================================")
 					logger.Warn("               SPECTACLE  INIT ERROR              ")
 					logger.Warn("==================================================")
-				case 0x71: // 观战
+				case 0x70, 0x71: // 观战
 					var repData []byte
 					switch matchStatus {
 					case MATCH_SPECT_SUCCESS:
