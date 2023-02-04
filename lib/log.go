@@ -197,7 +197,9 @@ func detect(buf []byte, from int, to int) {
 		switch data155pkg(buf[1]) {
 		case GAME_SELECT:
 			logger.Info("HOST_GAME GAME_SELECT Unknown ", buf[2:5], " Match ID ", littleIndia2Int(buf[5:9]))
-			matchStatus = MATCH_START
+			if matchStatus < MATCH_START {
+				matchStatus = MATCH_START
+			}
 		case GAME_INPUT:
 			logger.Info("HOST_GAME GAME_INPUT Unknown ", buf[2], " Input ", buf[3:13], " Match ID ", littleIndia2Int(buf[13:17]), " Host frame ", littleIndia2Int(buf[17:21]), " Client frame ", littleIndia2Int(buf[21:25]))
 		case GAME_REPLAY_DATA:
@@ -249,10 +251,21 @@ func Sync(master, slave *net.UDPConn) {
 			if slaveAddr != nil {
 				detect(buf[:n], int(masterPort), slaveAddr.Port)
 
-				_, err = slave.WriteToUDP(buf[:n], slaveAddr)
-				if err != nil {
-					logger.WithError(err).Error("slave write error")
-					break
+				if type155pkg(buf[0]) == PUNCH { // 劫持此处所有的 punch
+					buf[1] = 0x02
+					buf[2], buf[3] = 0x01, 0x00
+					_, err = master.Write(buf[:n])
+					logger.Info("Spectator get PUNCH from host to client")
+					if err != nil {
+						logger.WithError(err).Error("master write punch error")
+						break
+					}
+				} else {
+					_, err = slave.WriteToUDP(buf[:n], slaveAddr)
+					if err != nil {
+						logger.WithError(err).Error("slave write error")
+						break
+					}
 				}
 			}
 		}
@@ -358,7 +371,7 @@ func Sync(master, slave *net.UDPConn) {
 							}
 							matchStatus = MATCH_SPECT_INIT
 						case MATCH_SPECT_SUCCESS:
-							specData := []byte{byte(CLIENT_GAME), 0x01, byte(GAME_REPLAY_REQUEST), 0x00,
+							specData := []byte{byte(CLIENT_GAME), 0x01, byte(GAME_REPLAY_REQUEST), 0x00, 0x00, 0x00,
 								byte(matchId), byte(matchId >> 8), byte(matchId >> 16), byte(matchId >> 24),
 								0x00, 0x00, 0x00, 0x00,
 								byte(frameId[0]), byte(frameId[0] >> 8), byte(frameId[0] >> 16), byte(frameId[0] >> 24),
@@ -427,28 +440,29 @@ func Sync(master, slave *net.UDPConn) {
 				case HOST_GAME:
 					switch data155pkg(buf[1]) {
 					case GAME_REPLAY_MATCH:
-						matchId = littleIndia2Int(buf[4:8])
+						matchId = littleIndia2Int(buf[5:9])
 						copy(matchInfo, buf[:n])
 						frameId[0], frameId[1] = 0, 0
-						logger.Info("Spectator get HOST_GAME GAME_REPLAY_MATCH match id ", matchId, " match info ", ZlibDataDecode(littleIndia2Int(buf[16:20]), buf[20:n]))
+						logger.Info("Spectator get HOST_GAME GAME_REPLAY_MATCH match id ", matchId, " match info ", ZlibDataDecode(littleIndia2Int(buf[17:21]), buf[21:n]))
 					case GAME_REPLAY_DATA:
-						mid := littleIndia2Int(buf[4:8])
+						mid := littleIndia2Int(buf[5:9])
 						if mid != matchId {
 							logger.Error("Spectator get invalid match id ", mid, " expect ", matchId)
 						} else {
-							fidS, fidE := littleIndia2Int(buf[8:12]), littleIndia2Int(buf[12:16])
+							fidS, fidE := littleIndia2Int(buf[9:13]), littleIndia2Int(buf[13:17])
 							fidL := fidE - fidS
 							if fidS == frameId[0] {
 								frameId[0] = fidE
 							} else {
 								logger.Error("Spectator get invalid start frame id ", fidS, " expect ", frameId[0])
 							}
-							fidS, fidE = littleIndia2Int(buf[16+fidL*2:20+fidL*2]), littleIndia2Int(buf[20+fidL*2:24+fidL*2])
+							fidS, fidE = littleIndia2Int(buf[17+fidL*2:21+fidL*2]), littleIndia2Int(buf[21+fidL*2:25+fidL*2])
 							if fidS == frameId[1] {
 								frameId[1] = fidE
 							} else {
 								logger.Error("Spectator get invalid start frame id ", fidS, " expect ", frameId[1])
 							}
+							logger.Info("Spectator get HOST_GAME GAME_REPLAY_DATA match id ", matchId, " frame id ", frameId)
 						}
 					default:
 						logger.Error("Spectator get invalid package ", buf[:n])
