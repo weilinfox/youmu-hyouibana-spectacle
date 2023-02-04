@@ -42,6 +42,7 @@ const (
 	GAME_REPLAY_REQUEST data155pkg = iota + 7 // 0x09
 	GAME_REPLAY_MATCH                         // 0x0a
 	GAME_REPLAY_DATA                          // 0x0b
+	GAME_REPLAY_END                           // 0x0c
 )
 
 type match155status byte
@@ -49,7 +50,7 @@ type match155status byte
 const (
 	MATCH_WAIT match155status = iota
 	MATCH_ACCEPT
-	MATCH_START
+	// MATCH_START
 	MATCH_SPECT_ACK
 	MATCH_SPECT_INIT
 	MATCH_SPECT_SUCCESS
@@ -173,7 +174,7 @@ func detect(buf []byte, from int, to int) {
 		logger.Info("INIT_SUCCESS ", buf[1:3], " Random ID ", littleIndia2Int(buf[4:8]), " Unknown ", buf[8:10], " IP ", sockaddrIn2String(buf[10:16]), " Pad ", buf[16:48], " Zlib ", ZlibDataDecode(littleIndia2Int(buf[48:52]), buf[52:]))
 		matchStatus = MATCH_ACCEPT
 		logger.Warn("==================================================")
-		logger.Warn("                    MATCH ACCEPT")
+		logger.Warn("                    MATCH ACCEPT                  ")
 		logger.Warn("==================================================")
 
 	case INIT_ERROR:
@@ -183,23 +184,23 @@ func detect(buf []byte, from int, to int) {
 		logger.Info("HOST_QUIT Unknown ", buf[1:3], " Random ID ", littleIndia2Int(buf[4:8]))
 		matchStatus = MATCH_WAIT
 		logger.Warn("==================================================")
-		logger.Warn("                    HOST QUIT")
+		logger.Warn("                    HOST QUIT                     ")
 		logger.Warn("==================================================")
 
 	case CLIENT_QUIT:
 		logger.Info("CLIENT_QUIT Unknown ", buf[1:3], " Random ID ", littleIndia2Int(buf[4:8]))
 		matchStatus = MATCH_WAIT
 		logger.Warn("==================================================")
-		logger.Warn("                    CLIENT QUIT")
+		logger.Warn("                    CLIENT QUIT                   ")
 		logger.Warn("==================================================")
 
 	case HOST_GAME:
 		switch data155pkg(buf[1]) {
 		case GAME_SELECT:
 			logger.Info("HOST_GAME GAME_SELECT Unknown ", buf[2:5], " Match ID ", littleIndia2Int(buf[5:9]))
-			if matchStatus < MATCH_START {
+			/*if matchStatus < MATCH_START {
 				matchStatus = MATCH_START
-			}
+			}*/
 		case GAME_INPUT:
 			logger.Info("HOST_GAME GAME_INPUT Unknown ", buf[2], " Input ", buf[3:13], " Match ID ", littleIndia2Int(buf[13:17]), " Host frame ", littleIndia2Int(buf[17:21]), " Client frame ", littleIndia2Int(buf[21:25]))
 		case GAME_REPLAY_DATA:
@@ -300,13 +301,14 @@ func Sync(master, slave *net.UDPConn) {
 	}()
 
 	var hostConn *net.UDPConn
+	var matchEnd = false
 	var matchId = 0
 	var matchInfo []byte
 	var frameId = [2]int{0, 0}
 	// replay request
 	go func() {
 		defer func() {
-			// ch <- 1
+			ch <- 1
 		}()
 
 		hostAddr, _ := net.ResolveUDPAddr("udp", "localhost:10800")
@@ -348,8 +350,8 @@ func Sync(master, slave *net.UDPConn) {
 						case MATCH_WAIT:
 							break
 						case MATCH_ACCEPT:
-							logger.Info("Spectator known match accepted")
-						case MATCH_START:
+							//	logger.Info("Spectator known match accepted")
+							// case MATCH_START:
 							specData := append([]byte{byte(INIT)}, th155id[:]...)
 							specData = append(specData, []byte{byte(randId), byte(randId >> 8), byte(randId >> 16), byte(randId >> 24)}...)
 							logger.Info("Spectator send INIT ", specData)
@@ -371,11 +373,18 @@ func Sync(master, slave *net.UDPConn) {
 							}
 							matchStatus = MATCH_SPECT_INIT
 						case MATCH_SPECT_SUCCESS:
-							specData := []byte{byte(CLIENT_GAME), 0x01, byte(GAME_REPLAY_REQUEST), 0x00, 0x00, 0x00,
-								byte(matchId), byte(matchId >> 8), byte(matchId >> 16), byte(matchId >> 24),
-								0x00, 0x00, 0x00, 0x00,
-								byte(frameId[0]), byte(frameId[0] >> 8), byte(frameId[0] >> 16), byte(frameId[0] >> 24),
-								byte(frameId[1]), byte(frameId[1] >> 8), byte(frameId[1] >> 16), byte(frameId[1] >> 24)}
+							var specData []byte
+							if matchEnd {
+								specData = []byte{byte(CLIENT_GAME), 0x01, byte(GAME_REPLAY_REQUEST), 0x00, 0x00, 0x00,
+									0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+									0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+							} else {
+								specData = []byte{byte(CLIENT_GAME), 0x01, byte(GAME_REPLAY_REQUEST), 0x00, 0x00, 0x00,
+									byte(matchId), byte(matchId >> 8), byte(matchId >> 16), byte(matchId >> 24),
+									0x00, 0x00, 0x00, 0x00,
+									byte(frameId[0]), byte(frameId[0] >> 8), byte(frameId[0] >> 16), byte(frameId[0] >> 24),
+									byte(frameId[1]), byte(frameId[1] >> 8), byte(frameId[1] >> 16), byte(frameId[1] >> 24)}
+							}
 							logger.Info("Spectator send CLIENT_GAME GAME_REPLAY_REQUEST ", specData)
 							_, err := hostConn.Write(specData)
 							if err != nil {
@@ -440,10 +449,18 @@ func Sync(master, slave *net.UDPConn) {
 				case HOST_GAME:
 					switch data155pkg(buf[1]) {
 					case GAME_REPLAY_MATCH:
-						matchId = littleIndia2Int(buf[5:9])
-						copy(matchInfo, buf[:n])
-						frameId[0], frameId[1] = 0, 0
 						logger.Info("Spectator get HOST_GAME GAME_REPLAY_MATCH match id ", matchId, " match info ", ZlibDataDecode(littleIndia2Int(buf[17:21]), buf[21:n]))
+						mid := littleIndia2Int(buf[5:9])
+						if mid != matchId {
+							matchId = mid
+							matchEnd = false
+							copy(matchInfo, buf[:n])
+							frameId[0], frameId[1] = 0, 0
+
+							logger.Warn("==================================================")
+							logger.Warn("                    NEW MATCH                     ")
+							logger.Warn("==================================================")
+						}
 					case GAME_REPLAY_DATA:
 						mid := littleIndia2Int(buf[5:9])
 						if mid != matchId {
@@ -463,6 +480,14 @@ func Sync(master, slave *net.UDPConn) {
 								logger.Error("Spectator get invalid start frame id ", fidS, " expect ", frameId[1])
 							}
 							logger.Info("Spectator get HOST_GAME GAME_REPLAY_DATA match id ", matchId, " frame id ", frameId)
+						}
+					case GAME_REPLAY_END:
+						mid := littleIndia2Int(buf[5:9])
+						if mid != matchId {
+							logger.Error("Spectator get invalid match id ", mid, " expect ", matchId)
+						} else {
+							logger.Info("Spectator get HOST_GAME GAME_REPLAY_END match id ", matchId)
+							matchEnd = true
 						}
 					default:
 						logger.Error("Spectator get invalid package ", buf[:n])
