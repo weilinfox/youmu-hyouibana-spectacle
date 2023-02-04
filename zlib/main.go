@@ -5,11 +5,14 @@ import (
 	"compress/zlib"
 	"fmt"
 	"io"
+
+	"github.com/weilinfox/youmu-hyouibana-spectacle/lib"
 )
 
 func main() {
 
-	b := bytes.NewBuffer([]byte{0x78, 0x9c, 0x2d, 0xcd, 0x4b, 0x0a, 0x80, 0x30, 0x0c, 0x04, 0xd0, 0xa9, 0x28, 0x16, 0xdd, 0x74, 0xe7, 0xd9, 0x5c, 0x49, 0x94, 0x82, 0x42, 0x3f, 0x50, 0xab, 0xf5, 0x4e, 0x5e, 0xd2, 0xa4, 0xb8, 0x9a, 0xe1, 0x85, 0x30, 0x06, 0xd0, 0x1d, 0x00, 0xfb, 0xe4, 0x44, 0x0a, 0x50, 0x86, 0x61, 0x64, 0x20, 0xe7, 0x62, 0x59, 0x0a, 0xe5, 0x6d, 0xd7, 0xcc, 0xd5, 0x5b, 0xf6, 0x40, 0xde, 0x4a, 0xe7, 0x0a, 0xc9, 0x81, 0x73, 0xa5, 0x9c, 0x9d, 0x5d, 0xc2, 0xe5, 0x1b, 0xa0, 0x53, 0xff, 0xa5, 0xe7, 0xbc, 0x6d, 0x3a, 0x8f, 0x18, 0x84, 0xe7, 0x77, 0xaa, 0x2c, 0x6b, 0x5b, 0x74, 0x31, 0x09, 0xca, 0xb7, 0xac, 0x7e, 0x70, 0x9a, 0x13, 0xc6})
+	rd := []byte{0x78, 0x9c, 0x9d, 0x52, 0x6d, 0x0e, 0xc2, 0x20, 0x0c, 0x2d, 0x46, 0x8d, 0x3a, 0x4d, 0xf6, 0xc7, 0x43, 0x78, 0x0b, 0x6f, 0xb2, 0xe0, 0xc6, 0x16, 0x22, 0x0c, 0x03, 0xc3, 0x64, 0xf7, 0xf2, 0x80, 0xb6, 0x73, 0x1f, 0xcd, 0x12, 0x8d, 0xfa, 0xab, 0xed, 0xeb, 0x7b, 0x8f, 0x52, 0x48, 0x01, 0x36, 0x5b, 0x00, 0xa8, 0xa4, 0x55, 0x99, 0x75, 0x85, 0x5a, 0x00, 0xac, 0x04, 0x02, 0x29, 0x36, 0x96, 0x18, 0x09, 0x3b, 0x63, 0x8e, 0x38, 0x50, 0x0f, 0x66, 0x51, 0xb0, 0x1a, 0x73, 0x41, 0xba, 0x84, 0x74, 0x32, 0x34, 0xca, 0x67, 0x35, 0xfa, 0xce, 0xe5, 0x44, 0xa1, 0xc4, 0x2b, 0x6d, 0x23, 0x3f, 0x6f, 0xdd, 0xe9, 0xbc, 0x0e, 0x72, 0x70, 0xda, 0x21, 0x12, 0x8c, 0xbc, 0xab, 0xb7, 0x46, 0x93, 0x86, 0x3b, 0x8d, 0xf6, 0x83, 0x11, 0xd1, 0x2e, 0x95, 0xcd, 0x74, 0x41, 0xb4, 0xd8, 0xd3, 0x68, 0xd0, 0x9b, 0x91, 0xed, 0x87, 0x41, 0xf9, 0x3d, 0x87, 0x9a, 0x4f, 0x57, 0xe8, 0xb2, 0xd4, 0x79, 0x34, 0x4d, 0xcb, 0x55, 0xc9, 0x38, 0x77, 0xee, 0x8c, 0xf3, 0xdf, 0x2c, 0x50, 0x30, 0xe3, 0xfd, 0xb4, 0xc0, 0xbf, 0xf4, 0xd4, 0x0c, 0x37, 0x65, 0xcc, 0xaf, 0x2f, 0x77, 0xa0, 0x35, 0xc9, 0xfc, 0x5a, 0x79, 0x17, 0xeb, 0xa2, 0xdf, 0xd6, 0x89, 0x7d, 0x87, 0xa0, 0x54, 0x87, 0x3d, 0x8e, 0x2f, 0xd1, 0x13, 0x87, 0xcb, 0x3b, 0x6f}
+	b := bytes.NewBuffer(rd)
 	r, err := zlib.NewReader(b)
 	if err != nil {
 		fmt.Println(err)
@@ -18,15 +21,10 @@ func main() {
 		n, err := r.Read(ans)
 		r.Close()
 		fmt.Println(n, err == io.EOF, err, ans[:n])
+
+		fmt.Println("Decode:")
+		fmt.Println(lib.ZlibDataDecode(n, rd))
 	}
-
-	a := make(map[int][]byte)
-	fmt.Println(a[1])
-
-	c := []byte{0xff, 0xff, 0xff, 0xff}
-	intc := int32(c[0]) | int32(c[1])<<8 | int32(c[2])<<16 | int32(c[3])<<24
-	fmt.Println(intc, intc == -1)
-	fmt.Println(byte(intc), byte(intc>>8), byte(intc>>16), byte(intc>>24))
 
 }
 
@@ -278,8 +276,8 @@ line 5751
 10800->37129 00 00 00 00 32 ce 01 00 1c d2 01 00
 line 5761
 37129->10800 13 01 09 00 00 00 02 00 00 00 00 00 00 00 30 00 00 00 30 00 00 00
-10800->37129 12 0b 02 00 00 02 00 00 00 30 00 00 00 48 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-             00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 30 00 00 00 48 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+10800->37129 12 0b 02 00 00 02 00 00 00 [30 00 00 00] [48 00 00 00] 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+             00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 [30 00 00 00] [48 00 00 00] 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
              00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 37129->10800 13 01 09 00 00 00 02 00 00 00 00 00 00 00 48 00 00 00 48 00 00 00
 10800->37129 12 0b 02 00 00 02 00 00 00 48 00 00 00 60 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
@@ -335,8 +333,8 @@ line 15993 结束
                 05 [00] [00 00] [random id 32 ce 01 00] [time 51 11 02 00 06c1bh]  time 为从 th155.exe 启动开始(?)的毫秒数，在两端链接活跃时 05/06 包均隔 1s 发送一个，可能是测试延时之用
 06 CLIENT_T     06 [00] [71 00] [random id 76 5c 00 00] [unknown 固定 03 00 00 00 03 00 00 00] [time 1b 6c 00 00] client 发出
 07 PUNCH        07 [punch status 告诉需要打洞的对端 00] [4c 12 02 00] [port d3 3a 54074d] [ip c0 a8 00 68 192.168.0.104] 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-                07 [punch status 两个对端打洞       01] [00 00 02 00] 2a 30 c0 a8 00 68 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-                07 [punch status 回应打洞完成       02] [01 00 02 00] 91 09 c0 a8 00 68 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+                07 [punch status 两个对端打洞       01] [00 00 02 00] 2a 30 [ip c0 a8 00 68 192.168.0.104] 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+                07 [punch status 回应打洞完成       02] [01 00 02 00] 91 09 [ip c0 a8 00 68 192.168.0.104] 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 08 INIT         08 [unknown 固定 57 09 f6 67 f0 fd 4b d0 b9 9a 74 f8 38 33 81 88 00 00 00] [random id 76 5c 00 00]
 09 INIT_REQUEST 09 [unknown 固定 57 09 f6 67 f0 fd 4b d0 b9 9a 74 f8 38 33 81 88 00 00 00] [random id 76 5c 00 00] [对战 00 00 00 00 00 00 6b 00 6b 00 00 01] [87 00 00 00 len] [zlib data 78 9c 2d cd 4b 0a 80 30 0c 04 d0 a9 28 16 dd b8 f3 78 25 96 82 42 3f 50 eb e7 4c 5e 52 93 e2 6a 86 17 c2 4c 80 ee 00 b8 bb 64 52 80 9a 18 46 06 f2 3e 5d e6 a2 62 57 cd 5c bd 65 8f 14 9c 74 ae 90 1c 38 17 2a c5 3b 13 8f d0 00 9d fa 2f 3d e7 e9 f2 be a5 28 fc 3e 73 65 59 b3 c9 a7 2c 28 df b2 fa 01 83 4c 14 6b]
                                                                                                            decompress 16 0 0 8 5 0 0 0 [101 120 116 114 97] 1 0 0 1 16 0 0 8 11 0 0 0 [97 108 108 111 119 95 119 97 116 99 104] 8 0 0 1 1 16 0 0 8 4 0 0 0 [110 97 109 101] 16 0 0 8 0 0 0 0 16 0 0 8 10 0 0 0 [98 97 116 116 108 101 95 110 117 109] 2 0 0 5 1 0 0 0 16 0 0 8 7 0 0 0 [118 101 114 115 105 111 110] 2 0 0 5 255 170 23 0 16 0 0 8 5 0 0 0 [99 111 108 111 114] 2 0 0 5 10 0 0 0 1 0 0 1
@@ -359,21 +357,29 @@ line 15993 结束
                 0c [unknown 固定 00 00 00 00 00 00 00 00 00 28 00 28 00 00 01] [1f 00 00 00 dec len=31] [zlib data 78 9c 13 60 60 e0 60 67 60 60 c8 4d 2d 2e 4e 4c 4f 15 00 72 59 80 dc a4 d2 e2 4a 46 06 06 46 00 4a a5 04 e6]
                                                                                             decompress 16 0 0 8 7 0 0 0 [109 101 115 115 97 103 101] 16 0 0 8 4 0 0 0 [98 117 115 121] 1 0 0 1
                                                                                                                            message                                         busy       已经在对战中
+                12 [unknown 发生变化 0 0 0 0 0 0 0 0 0 41 0 41 0 0 1] [32 0 0 0] [120 156 19 96 96 224 96 103 96 96 200 77 45 46 78 76 79 21 0 114 89 129 220 162 212 196 148 74 70 6 6 70 0 81 7 5 57]
+                                                                                            INIT_ERROR Unknown [0 0 0 0 0 0 0 0 0 41 0 41 0 0 1]message:[], ready:[]                  请求观战但是对战未开始
                  zlib 压缩数据，首先是一个小端序的解压后长度，然后是 0x78 0x9c 引导的 zlib 数据。解压后为一串数据，这串数据以 1 0 0 1 结尾；这串数据中每个数据以 16 0 0 8 开头，然后是小端序的数据名称长度 len ，然后是 len 长的 ascii 字串为数据名，然后是数据值（可能没有值）
 0f HOST_QUIT    0f [00 00 00] [random id f5 61 02 00] 00 00 00 00
 10 CLIENT_QUIT  10 [f9 fc 0e] [random id 5d 64 00 00] 00 00 00 00
-12 HOST_GAME    12                   [06 00] [game input (?) 02 00 02 00 02 00 02 00 02 00] [match id 02 00 00 00] [host frame 7a 03 00 00] [client frame 78 03 00 00]
+12 HOST_GAME    12                   [06 00] [game input 02 00 02 00 02 00 02 00 02 00] [match id 02 00 00 00] [host frame 7a 03 00 00] [client frame 78 03 00 00]
                                       GAME_INPUT
-                12                   [0b 02] 00 00 [match id 02 00 00 00] [frame id start 5c 07 00 00 1884d] [frame id end 60 07 00 00 1888d] [frame input data 00 00 00 00 00 00 00 00 length=4] [frame id start 5c 07 00 00 1884d] [frame id end 5f 07 00 00 1887d] [frame input data 00 00 00 00 00 00 length=3]
+                12                   [0a 02] 00 00 [match id 02 00 00 00] 00 01 00 00 ca 00 ca 00 [40 02 00 00 len] [zlib data 78 9c 9d 52 6d 0e c2 20 0c 2d 46 8d 3a 4d f6 c7 43 78 0b 6f b2 e0 c6 16 22 0c 03 c3 64 f7 f2 80 b6 73 1f cd 12 8d fa ab ed eb 7b 8f 52 48 01 36 5b 00 a8 a4 55 99 75 85 5a 00 ac 04 02 29 36 96 18 09 3b 63 8e 38 50 0f 66 51 b0 1a 73 41 ba 84 74 32 34 ca 67 35 fa ce e5 44 a1 c4 2b 6d 23 3f 6f dd e9 bc 0e 72 70 da 21 12 8c bc ab b7 46 93 86 3b 8d f6 83 11 d1 2e 95 cd 74 41 b4 d8 d3 68 d0 9b 91 ed 87 41 f9 3d 87 9a 4f 57 e8 b2 d4 79 34 4d cb 55 c9 38 77 ee 8c f3 df 2c 50 30 e3 fd b4 c0 bf f4 d4 0c 37 65 cc af 2f 77 a0 35 c9 fc 5a 79 17 eb a2 df d6 89 7d 87 a0 54 87 3d 8e 2f d1 13 87 cb 3b 6f]
+                                      GAME_REPLAY_MATCH
+                        game_mode:[2 0 0 5 1 0 0 0], mode:[64 0 0 8 2 0 0 0 2 0 0 5 0 0 0 0 2 0 0 5 0 0 0 0 2 0 0 5 1 0 0 0 2 0 0 5 0 0 0 0 1 0 0 1], master_name:[64 0 0 8 2 0 0 0 2 0 0 5 0 0 0 0], reimu:[2 0 0 5 1 0 0 0], marisa:[1 0 0 1], slave_name:[64 0 0 8 2 0 0 0 2 0 0 5 0 0 0 0], marisa:[2 0 0 5 1 0 0 0], reimu:[1 0 0 1], bgm_id:[2 0 0 5 117 0 0 0], player_name:[64 0 0 8 2 0 0 0 2 0 0 5 0 0 0 0], :[2 0 0 5 1 0 0 0], :[1 0 0 1], difficulty:[2 0 0 5 0 0 0 0], slave_color:[64 0 0 8 2 0 0 0 2 0 0 5 0 0 0 0 2 0 0 5 0 0 0 0 2 0 0 5 1 0 0 0 2 0 0 5 1 0 0 0 1 0 0 1], master_color:[64 0 0 8 2 0 0 0 2 0 0 5 0 0 0 0 2 0 0 5 0 0 0 0 2 0 0 5 1 0 0 0 2 0 0 5 1 0 0 0 1 0 0 1], spell:[64 0 0 8 2 0 0 0 2 0 0 5 0 0 0 0 2 0 0 5 0 0 0 0 2 0 0 5 1 0 0 0 2 0 0 5 0 0 0 0 1 0 0 1], background_id:[2 0 0 5 41 0 0 0], seed:[2 0 0 5 180 21 0 0]
+                12                   [0b 02] 00 00 [match id 02 00 00 00] [frame id start 5c 07 00 00 1884d] [frame id end 60 07 00 00 1888d] [frame input data 00 00 00 00 00 00 00 00 length=4 (max=24)] [frame id start 5c 07 00 00 1884d] [frame id end 5f 07 00 00 1887d] [frame input data 00 00 00 00 00 00 length=3]
                                       GAME_REPLAY_DATA
+                12                   [04 02] 01 00 [match id 01 00 00 00]
+                                      GAME_SELECT
                     12 由 host 发出
-13 CLIENT_GAME  13 [client count 00] [06 01] [game input (?) 10 00 00 00 00 00 00 00 10 00] [match id 01 00 00 00] [host frame 91 00 00 00] [client frame 90 00 00 00]
+13 CLIENT_GAME  13 [client count 00] [06 01] [game input 10 00 00 00 00 00 00 00 10 00] [match id 01 00 00 00] [host frame 91 00 00 00] [client frame 90 00 00 00]
                                       GAME_INPUT
                 13 [client count 01] [09 00] 00 00 [match id 02 00 00 00] 00 00 00 00 [frame id 59 07 00 00] [frame id 58 07 00 00]
-                                      GAME_REPLAY_REQ
+                                      GAME_REPLAY_REQUEST
                     13 由 client 发出， client count 为 client 在这个 host 下的编号，从 0 开始
 
 连接过程为 08->04->09->0b/0c
 如果已经在对战中，则第三端在连接 host 时会和 client 07 打洞两次
+match id 和则不一样，华一个 Round 计为一次 Match
 
 */

@@ -1,6 +1,8 @@
-# hyouibana protocol
+# hyouibana spectacle
 
-从 0 开始的抓包和研判。
+从 0 开始的抓包和研判；协议的解释见 [zlib/main.go](zlib/main.go) 最下面的注释。
+
+凭依华联机协议及观战服务器 demo
 
 实现的功能：
 
