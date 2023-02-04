@@ -182,14 +182,12 @@ func detect(buf []byte, from int, to int) {
 
 	case HOST_QUIT:
 		logger.Info("HOST_QUIT Unknown ", buf[1:3], " Random ID ", littleIndia2Int(buf[4:8]))
-		matchStatus = MATCH_WAIT
 		logger.Warn("==================================================")
 		logger.Warn("                    HOST QUIT                     ")
 		logger.Warn("==================================================")
 
 	case CLIENT_QUIT:
 		logger.Info("CLIENT_QUIT Unknown ", buf[1:3], " Random ID ", littleIndia2Int(buf[4:8]))
-		matchStatus = MATCH_WAIT
 		logger.Warn("==================================================")
 		logger.Warn("                    CLIENT QUIT                   ")
 		logger.Warn("==================================================")
