@@ -303,6 +303,7 @@ func Sync(master, slave *net.UDPConn) {
 	var matchId = 0
 	var matchInfo []byte
 	var frameId = [2]int{0, 0}
+	var frameRec = [2][]byte{}
 	// replay request
 	go func() {
 		defer func() {
@@ -321,6 +322,8 @@ func Sync(master, slave *net.UDPConn) {
 				hostConn, _ = net.DialUDP("udp", nil, hostAddr)
 
 				timeWait := 0
+
+			bigLoop:
 				for {
 					time.Sleep(time.Millisecond * 33)
 					timeWait += 1
@@ -346,7 +349,7 @@ func Sync(master, slave *net.UDPConn) {
 					} else if timeWait%2 == 0 {
 						switch matchStatus {
 						case MATCH_WAIT:
-							break
+							break bigLoop
 						case MATCH_ACCEPT:
 							//	logger.Info("Spectator known match accepted")
 							// case MATCH_START:
@@ -454,6 +457,7 @@ func Sync(master, slave *net.UDPConn) {
 							matchEnd = false
 							copy(matchInfo, buf[:n])
 							frameId[0], frameId[1] = 0, 0
+							frameRec[0], frameRec[1] = []byte{}, []byte{}
 
 							logger.Warn("==================================================")
 							logger.Warn("                    NEW MATCH                     ")
@@ -468,12 +472,20 @@ func Sync(master, slave *net.UDPConn) {
 							fidL := fidE - fidS
 							if fidS == frameId[0] {
 								frameId[0] = fidE
+								frameRec[0] = append(frameRec[0], buf[17:17+fidL*2]...)
+								if len(frameRec[0]) != fidE*2 {
+									logger.Error("Spectator get wrong record0 length after append new data ", len(frameRec[0]), " expect ", fidE*2)
+								}
 							} else {
 								logger.Error("Spectator get invalid start frame id ", fidS, " expect ", frameId[0])
 							}
 							fidS, fidE = littleIndia2Int(buf[17+fidL*2:21+fidL*2]), littleIndia2Int(buf[21+fidL*2:25+fidL*2])
 							if fidS == frameId[1] {
 								frameId[1] = fidE
+								frameRec[1] = append(frameRec[1], buf[25+fidL*2:n]...)
+								if len(frameRec[1]) != fidE*2 {
+									logger.Error("Spectator get wrong record1 length after append new data ", len(frameRec[1]), " expect ", fidE*2)
+								}
 							} else {
 								logger.Error("Spectator get invalid start frame id ", fidS, " expect ", frameId[1])
 							}
