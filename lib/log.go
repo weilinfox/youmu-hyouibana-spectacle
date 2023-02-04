@@ -445,11 +445,11 @@ func Sync(master, slave *net.UDPConn) {
 					}
 				case INIT_SUCCESS:
 					matchStatus = MATCH_SPECT_SUCCESS
-					copy(initSuccessInfo, buf[8:n])
+					initSuccessInfo = buf[8:n]
 					logger.Info("Spectator get INIT_SUCCESS ", ZlibDataDecode(littleIndia2Int(buf[48:52]), buf[52:n]))
 				case INIT_ERROR:
 					matchStatus = MATCH_SPECT_ERROR
-					copy(initErrorInfo, buf[1:n])
+					initErrorInfo = buf[1:n]
 					logger.Info("Spectator get INIT_ERROR ", ZlibDataDecode(littleIndia2Int(buf[16:20]), buf[20:n]))
 				case HOST_GAME:
 					switch data155pkg(buf[1]) {
@@ -459,7 +459,7 @@ func Sync(master, slave *net.UDPConn) {
 						if mid != matchId {
 							matchId = mid
 							matchEnd = false
-							copy(matchInfo, buf[:n])
+							matchInfo = buf[:n]
 							frameId[0], frameId[1] = 0, 0
 							frameRec[0], frameRec[1] = []byte{}, []byte{}
 
@@ -526,27 +526,26 @@ func Sync(master, slave *net.UDPConn) {
 		specConn, _ := net.ListenUDP("udp", specAddr)
 		buf := make([]byte, 2048)
 
-	serverLoop:
 		for {
 			n, remoteAddr, err := specConn.ReadFromUDP(buf)
 			if err != nil {
 				logger.WithError(err).Error("Spectator server read udp error")
-				break
+				// break
 			}
 
 			switch type155pkg(buf[0]) {
 			case HOST_T_ACK:
 				timeDiff := int64(littleIndia2Int(buf[8:12]))
 				timeDiffNow := time.Now().UnixMilli() - timeId
-				logger.Infof("Spectator server delay %dms", timeDiffNow-timeDiff)
+				logger.Infof("Spectator server get delay %dms", timeDiffNow-timeDiff)
 			case CLIENT_T:
+				logger.Info("Spectator server get CLIENT_T")
 				repData := []byte{byte(CLIENT_T_ACK), 0x00, 0x00, 0x00}
 				repData = append(repData, buf[4:8]...)
 				repData = append(repData, buf[16:20]...)
 				n, err = specConn.WriteToUDP(repData, remoteAddr)
 				if err != nil {
 					logger.WithError(err).Error("Spectator server write CLIENT_T_ACK error")
-					break serverLoop
 				}
 				// send HOST_T
 				timeDiff := time.Now().UnixMilli() - timeId
@@ -555,15 +554,15 @@ func Sync(master, slave *net.UDPConn) {
 				n, err = specConn.WriteToUDP(repData, remoteAddr)
 				if err != nil {
 					logger.WithError(err).Error("Spectator server write HOST_T error")
-					break serverLoop
 				}
 			case INIT:
+				logger.Info("Spectator server get INIT")
 				n, err = specConn.WriteToUDP([]byte{byte(INIT_ACK)}, remoteAddr)
 				if err != nil {
 					logger.WithError(err).Error("Spectator server write INIT_ACK error")
-					break serverLoop
 				}
 			case INIT_REQUEST:
+				logger.Info("Spectator server get INIT_REQUEST")
 				switch buf[30] {
 				case 0x6b: // 对战
 					// message busy
@@ -573,32 +572,46 @@ func Sync(master, slave *net.UDPConn) {
 					n, err = specConn.WriteToUDP(errData, remoteAddr)
 					if err != nil {
 						logger.WithError(err).Error("Spectator server write INIT_ERROR error")
-						break serverLoop
 					}
+					logger.Warn("==================================================")
+					logger.Warn("               SPECTACLE  INIT ERROR              ")
+					logger.Warn("==================================================")
 				case 0x71: // 观战
 					var repData []byte
 					switch matchStatus {
 					case MATCH_SPECT_SUCCESS:
 						repData = []byte{byte(INIT_SUCCESS), 0x00, 0x00, 0x00, byte(randId), byte(randId >> 8), byte(randId >> 16), byte(randId >> 24)}
+						//repData = append(repData, 0x11, 0x27)
 						repData = append(repData, initSuccessInfo...)
+						logger.Warn("==================================================")
+						logger.Warn("               SPECTACLE  INIT SUCCESS            ")
+						logger.Warn("==================================================")
 					case MATCH_SPECT_ERROR:
 						repData = []byte{byte(INIT_ERROR)}
 						repData = append(repData, initErrorInfo...)
+						logger.Warn("==================================================")
+						logger.Warn("               SPECTACLE  INIT ERROR              ")
+						logger.Warn("==================================================")
 					default:
 						// message ready
 						repData = []byte{byte(INIT_ERROR), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x29, 0x00, 0x29, 0x00, 0x00, 0x01,
 							0x20, 0x00, 0x00, 0x00, 0x78, 0x9c, 0x13, 0x60, 0x60, 0xe0, 0x60, 0x67, 0x60, 0x60, 0xc8, 0x4d, 0x2d, 0x2e, 0x4e, 0x4c,
 							0x4f, 0x15, 0x00, 0x72, 0x59, 0x81, 0xdc, 0xa2, 0xd4, 0xc4, 0x94, 0x4a, 0x46, 0x06, 0x06, 0x46, 0x00, 0x51, 0x07, 0x05, 0x39}
+						logger.Warn("==================================================")
+						logger.Warn("               SPECTACLE  INIT ERROR              ")
+						logger.Warn("==================================================")
 					}
 					n, err = specConn.WriteToUDP(repData, remoteAddr)
 					if err != nil {
 						logger.WithError(err).Error("Spectator server write INIT_SUCCESS/INIT_ERROR error")
-						break serverLoop
 					}
 				default:
 					logger.Error("Spectator server get unknown INIT_REQUEST ", buf[:n])
 				}
+			case CLIENT_QUIT:
+				logger.Info("Spectator server get CLIENT_QUIT")
 			case CLIENT_GAME:
+				logger.Info("Spectator server get CLIENT_GAME")
 				switch data155pkg(buf[2]) {
 				case GAME_REPLAY_REQUEST:
 					mid := littleIndia2Int(buf[6:10])
@@ -617,22 +630,28 @@ func Sync(master, slave *net.UDPConn) {
 						repData = []byte{byte(HOST_GAME), byte(GAME_REPLAY_END), 0x00, 0x00, 0x00, byte(mid), byte(mid >> 8), byte(mid >> 16), byte(mid >> 24)}
 					} else {
 						fidE0, fidE1 := int(math.Min(float64(len(frameRec[0])), float64(fid0+48))), int(math.Min(float64(len(frameRec[1])), float64(fid1+48))) // max=24*2
-						replay0, replay1 := frameRec[0][fid0+2:fidE0+2], frameRec[1][fid1+2:fidE1+2]
+						replay := [2][]byte{}
+						if fidE0 > fid0 {
+							replay[0] = frameRec[0][fid0:fidE0]
+						}
+						if fidE1 > fid1 {
+							replay[1] = frameRec[1][fid1:fidE1]
+						}
 						fid0 >>= 1
 						fid1 >>= 1
 						fidE0 >>= 1
 						fidE1 >>= 1
 						repData = []byte{byte(HOST_GAME), byte(GAME_REPLAY_DATA), 0x02, 0x00, 0x00, byte(mid), byte(mid >> 8), byte(mid >> 16), byte(mid >> 24),
 							byte(fid0), byte(fid0 >> 8), byte(fid0 >> 16), byte(fid0 >> 24), byte(fidE0), byte(fidE0 >> 8), byte(fidE0 >> 16), byte(fidE0 >> 24)}
-						repData = append(repData, replay0...)
+						repData = append(repData, replay[0]...)
 						repData = append(repData, byte(fid1), byte(fid1>>8), byte(fid1>>16), byte(fid1>>24), byte(fidE1), byte(fidE1>>8), byte(fidE1>>16), byte(fidE1>>24))
-						repData = append(repData, replay1...)
+						repData = append(repData, replay[1]...)
 					}
 
+					logger.Info("Spectator server send HOST_GAME", repData)
 					n, err = specConn.WriteToUDP(repData, remoteAddr)
 					if err != nil {
 						logger.WithError(err).Error("Spectator server write HOST_GAME error")
-						break serverLoop
 					}
 
 				default:
