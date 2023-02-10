@@ -12,4 +12,6 @@
 
 对战方连接 ``127.0.0.1:4646`` ，观战方连接 ``127.0.0.1:4647``
 
+所有的 zlib 貌似都不能用 golang 的 zlib 库来压缩， th155 不认，需要用 ``zlib.h`` 。
+
 已经应用在 [thlink](https://github.com/weilinfox/youmu-thlink) 联机器中。
